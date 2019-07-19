@@ -6,7 +6,7 @@
     </head>
     <body style="padding: 10vw">
         <h3>RNN with GRU </h3>
-        <h6><span class="badge badge-secondary">After 1hr training (on my laptop)</span></h6>
+        <h6><span class="badge badge-secondary p-2">After 1hr training (on my laptop)</span></h6>
         
         <form method="POST" action="/predict">
             <div class="form-group">
@@ -24,8 +24,13 @@
             </div>
             <div class="form-group">
                 <label for="rate">Rating: </label>
-                <output name="rating" id="rateInput">3</output> <br>
-                <input type="range" min="1" max="5" value="3" step="1" class="form-control-range" name="rateInput" id="rate" oninput="rating.value = rate.value">
+                <div class="row" style="text-align: center">
+                    <label class="col-sm rounded bg-light py-2 mx-1"><input type="radio" name="rateInput" value='1' aria-label="1"> 1 Star </label>
+                    <label class="col-sm rounded bg-light py-2 mx-1"><input type="radio" name="rateInput" value='2' aria-label="2"> 2 Stars </label>
+                    <label class="col-sm rounded bg-light py-2 mx-1"><input type="radio" name="rateInput" value='3' aria-label="3" checked> 3 Stars </label>
+                    <label class="col-sm rounded bg-light py-2 mx-1"><input type="radio" name="rateInput" value='4' aria-label="4"> 4 Stars </label>
+                    <label class="col-sm rounded bg-light py-2 mx-1"><input type="radio" name="rateInput" value='5' aria-label="5"> 5 Stars </label>
+                </div>
             </div>
             <input type="submit" value="Generate" class="btn btn-primary btn-lg" data-loading-text="loading..." onclick="visible()">
         </form>

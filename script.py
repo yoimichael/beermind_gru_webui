@@ -27,7 +27,7 @@ def predict():
     if "beerstyle" not in data:
         return index()
     
-    
+    print(data['rateInput'])
     dat = zeros([1,1,208])
     dat[0][0][int(data['beerstyle'])] = 1
     dat[0][0][104 + int(data['rateInput']) % 5] = 1
