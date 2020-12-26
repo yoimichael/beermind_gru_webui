@@ -2,57 +2,41 @@ import numpy as np
 import torch.nn.functional as F
 from torch import device, from_numpy
 
-max_len = 1500
+ONE_HOT_POS_TO_SPECIAL_CHAR = {
+    95: '\x02', # SOS
+    96: '\x03', # EOS
+    97: '\t' # unknown -> null 
+}
+MAX_GENERATE_LEN = 1500
+CHAR_ONE_HOT_LEN = 98
 # convert each character to an one-hot vector sized 97 using ASCII value - 32
 # exceptions: SOS = 95, EOS = 96, unknown char = 97
-def char2pos(c):
+def char2pos(c: str) -> int:
     pos = ord(c)
-    # if it's SOS or EOS
-    if (pos == 2):
-        pos = 95
-    elif (pos == 3):
-        pos = 96
-    else:
-        # other normal ASCII
-        pos -= 32
-        if pos < 0: 
-            # make the \n\t a space
-            pos = 0
-        elif pos > 94:
-            pos = 97
+    if pos == 2:  # SOS
+        return 95
+    if pos == 3:  # EOS
+        return 96
+    # normal ASCII starting at space, minus the offset 32
+    pos -= ord(' ')
+    if pos < 0:  # convert escape chars into spaces
+        return 0
+    if pos > 94:
+        return 97
 
-    return pos
+    return pos  
 
-def char2oh(c):
-    ans = np.zeros(98)
-    ans[char2pos(c)] = 1
-    return ans
-
-def pos2char(pos):
+def pos2char(pos: int) -> str:
     pos = int(pos)
-    
+    if pos < 95:
+        # normal characters
+        return chr(pos + 32)
     # special characters
-    if (pos == 95): 
-        return '\x02' #SOS
-    elif (pos == 96):
-        return '\x03' #EOS
-    elif (pos == 97):
-        return '\t' #unknown -> null 
+    return ONE_HOT_POS_TO_SPECIAL_CHAR[pos]
 
-    # normal characters
-    return chr(pos + 32)
-
-def oh2char(oh):
-    # find which one
-    pos = oh.argmax()
-
-    return pos2char(pos)
-def generate(model, X_test, temporature=0.2):
+def generate(model, X_test, temporature: float=0.2):
     # Given n rows in test data, generate a list of n strings, where each string is the review
     # corresponding to each input row in test data.        
-        
-    computing_device = device("cpu")
-     
     batchSize = len(X_test)
     reviews = [""] * batchSize
     
@@ -62,13 +46,13 @@ def generate(model, X_test, temporature=0.2):
     model.hidden = model.init_hidden(batchSize)
     
     # keep track of the maximum length
-    count = max_len
+    count = MAX_GENERATE_LEN
     
     # let the model generate next characters
     while(count > 0):
 
         # get the next output from the model
-        output = model(from_numpy(X_test).float().to(computing_device))
+        output = model(from_numpy(X_test).float().to(device("cpu")))
 
         # if use temperature when testing
         
@@ -83,7 +67,7 @@ def generate(model, X_test, temporature=0.2):
         for i in range(batchSize):
             probs = output[i][0]
             # find the character 
-            pos = np.random.choice(98, 1, p=probs.detach().cpu().numpy())[0]
+            pos = np.random.choice(CHAR_ONE_HOT_LEN, 1, p=probs.detach().cpu().numpy())[0]
             
             if (pos == 96):
                 eoses += 1
@@ -91,9 +75,9 @@ def generate(model, X_test, temporature=0.2):
             reviews[i] += pos2char(pos)
                         
             # update X_test
-            oh = np.zeros(98)
+            oh = np.zeros(CHAR_ONE_HOT_LEN)
             oh[pos] = 1
-            X_test[i][0][-98:] = oh
+            X_test[i][0][-CHAR_ONE_HOT_LEN:] = oh
             del oh
 
         # if all are done

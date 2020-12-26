@@ -18,8 +18,8 @@
         <div class="form-group">
             <label for="beerstyle">Beer style:</label>
             <select name="beerstyle" id="beerstyle" class="form-control">
-                    {% for name, val in styles.items() %}
-                    <option value= "{{val}}" SELECTED>{{name}}</option>"
+                    {% for name in styles.keys() %}
+                    <option value="{{name}}" SELECTED>{{name}}</option>"
                     {% endfor %}
                 </select>
         </div>
@@ -39,7 +39,9 @@
     <div class="spinner-grow text-info" id="load" role="status" style="width: 4rem; height: 4rem; display: none">
         <span class="sr-only">Loading...</span>
     </div>
-    <p class="text-justify">{{ prediction }}</p>
+    {% for paragraph in prediction %}
+    <p class="text-justify">{{paragraph}}</p>
+    {% endfor %}
 
     <br>
     <a href="https://github.com/yoiyang/beermind_gru_train/blob/develop/paper.pdf" target="_blank">Read the paper.</a>
