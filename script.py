@@ -1,5 +1,6 @@
 import os
 import utils
+import constants
 from numpy import zeros
 from model import baselineGRU
 from beer_styles import encode_style
@@ -12,7 +13,7 @@ app = Flask(__name__, static_url_path='/static')
 model = baselineGRU()
 model.zero_grad()
 # each time we are only generating one character
-model.hidden = model.init_hidden(utils.REVIEW_BATCH_SIZE)
+model.hidden = model.init_hidden(constants.REVIEW_BATCH_SIZE)
 
 
 @app.route('/')
@@ -33,14 +34,13 @@ def predict():
     rate = form_inputs['rateInput']
     temp = float(form_inputs['temp'])
 
-    dat = zeros([1, 1, utils.ONE_HOT_VECTOR_LEN])
+    dat = zeros([1, 1, constants.ONE_HOT_VECTOR_LEN])
     # OH encode beer style
     dat[0][0][encode_style[style]] = 1
     # OH encode rating
-    dat[0][0][utils.ONE_HOT_BEER_STYLE_VECTOR_LEN + int(rate) % 5] = 1
+    dat[0][0][constants.ONE_HOT_BEER_STYLE_VECTOR_LEN + int(rate) % 5] = 1
     # OH encode "Start of Sentence" char
-    char_start_idx = utils.CHAR_START_IDX
-    dat[0][0][char_start_idx + utils.char2pos('\x02')] = 1
+    dat[0][0][constants.CHAR_START_IDX + utils.char2pos('\x02')] = 1
 
     specs = (f"Style = {style}, "
              f"Rating = {rate}, "
