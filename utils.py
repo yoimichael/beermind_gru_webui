@@ -34,56 +34,33 @@ def pos2char(pos: int) -> str:
     # special characters
     return ONE_HOT_POS_TO_SPECIAL_CHAR[pos]
 
-def generate(model, X_test, temporature: float=0.2):
-    # Given n rows in test data, generate a list of n strings, where each string is the review
-    # corresponding to each input row in test data.        
-    batchSize = len(X_test)
-    reviews = [""] * batchSize
-    
-     # prepare the model
-    model.zero_grad()
-    # each time we are only generating one character
-    model.hidden = model.init_hidden(batchSize)
-    
+def generate_once(model, X_test, temporature: float=0.2):    
     # keep track of the maximum length
     count = MAX_GENERATE_LEN
-    
+    review_chars = []
     # let the model generate next characters
     while(count > 0):
-
         # get the next output from the model
         output = model(from_numpy(X_test).float().to(device("cpu")))
-
         # if use temperature when testing
-        
         output /= temporature
-
         # find probability of each character
         output = F.softmax(output,dim=2)
+        probs = output[0][0]
+        # find the character 
+        pos = np.random.choice(CHAR_ONE_HOT_LEN, 1, p=probs.detach().cpu().numpy())[0]
         
-        # check if all are done
-        eoses = 0
-        
-        for i in range(batchSize):
-            probs = output[i][0]
-            # find the character 
-            pos = np.random.choice(CHAR_ONE_HOT_LEN, 1, p=probs.detach().cpu().numpy())[0]
-            
-            if (pos == 96):
-                eoses += 1
-            # add current char to the review
-            reviews[i] += pos2char(pos)
-                        
-            # update X_test
-            oh = np.zeros(CHAR_ONE_HOT_LEN)
-            oh[pos] = 1
-            X_test[i][0][-CHAR_ONE_HOT_LEN:] = oh
-            del oh
-
-        # if all are done
-        if (eoses == batchSize):
+        if (pos == 96):
             break
+        # add current char to the review
+        review_chars.append(pos2char(pos))
+                    
+        # update X_test
+        oh = np.zeros(CHAR_ONE_HOT_LEN)
+        oh[pos] = 1
+        X_test[0][0][-CHAR_ONE_HOT_LEN:] = oh
+        del oh
 
         count -= 1
-    
-    return reviews
+
+    return ''.join(review_chars)

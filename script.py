@@ -9,7 +9,11 @@ from flask import Flask, render_template, request
 static_folder = os.path.join(os.pardir, 'static')
 #creating instance of the class with static file location
 app = Flask(__name__, static_url_path='/static')
+    # prepare the model
 model = baselineGRU()
+model.zero_grad()
+# each time we are only generating one character
+model.hidden = model.init_hidden(1)
 
 @app.route('/')
 @app.route('/index')
@@ -39,7 +43,7 @@ def predict():
               f"Rating = {rate}, "
               f"Temperature = {temp}: ")
 
-    prediction = utils.generate(model, dat, temp)[0] + '...'
+    prediction = utils.generate_once(model, dat, temp) + '...'
     return render_template('index.html',styles=encode_style, title="Hi",
                            prediction=[specs, prediction])
 
