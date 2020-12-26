@@ -3,12 +3,24 @@ import torch.nn.functional as F
 from torch import device, from_numpy
 
 ONE_HOT_POS_TO_SPECIAL_CHAR = {
-    95: '\x02', # SOS
-    96: '\x03', # EOS
-    97: '\t' # unknown -> null 
+    95: '\x02',  # SOS
+    96: '\x03',  # EOS
+    97: '\t'  # unknown -> null
 }
+REVIEW_BATCH_SIZE = 1
 MAX_GENERATE_LEN = 1500
-CHAR_ONE_HOT_LEN = 98
+ONE_HOT_BEER_STYLE_VECTOR_LEN = 104
+ONE_HOT_RATING_VECTOR_LEN = 5
+ONE_HOT_CHAR_VECTOR_LEN = 98
+BIAS_VECTOR_LEN = 1
+ONE_HOT_VECTOR_LEN = (ONE_HOT_BEER_STYLE_VECTOR_LEN +
+                      BIAS_VECTOR_LEN +
+                      ONE_HOT_RATING_VECTOR_LEN +
+                      ONE_HOT_CHAR_VECTOR_LEN)
+CHAR_START_IDX = (ONE_HOT_BEER_STYLE_VECTOR_LEN +
+                  ONE_HOT_RATING_VECTOR_LEN +
+                  BIAS_VECTOR_LEN)
+
 # convert each character to an one-hot vector sized 97 using ASCII value - 32
 # exceptions: SOS = 95, EOS = 96, unknown char = 97
 def char2pos(c: str) -> int:
@@ -24,7 +36,8 @@ def char2pos(c: str) -> int:
     if pos > 94:
         return 97
 
-    return pos  
+    return pos
+
 
 def pos2char(pos: int) -> str:
     pos = int(pos)
@@ -34,7 +47,8 @@ def pos2char(pos: int) -> str:
     # special characters
     return ONE_HOT_POS_TO_SPECIAL_CHAR[pos]
 
-def generate_once(model, X_test, temporature: float=0.2):    
+
+def generate_once(model, X_test, temporature: float = 0.2):
     # keep track of the maximum length
     count = MAX_GENERATE_LEN
     review_chars = []
@@ -45,21 +59,21 @@ def generate_once(model, X_test, temporature: float=0.2):
         # if use temperature when testing
         output /= temporature
         # find probability of each character
-        output = F.softmax(output,dim=2)
+        output = F.softmax(output, dim=2)
         probs = output[0][0]
-        # find the character 
-        pos = np.random.choice(CHAR_ONE_HOT_LEN, 1, p=probs.detach().cpu().numpy())[0]
-        
-        if (pos == 96):
+        # find the character
+        pos = np.random.choice(ONE_HOT_CHAR_VECTOR_LEN, 1,
+                               p=probs.detach().cpu().numpy())[0]
+        if (pos == 96):  # stop of reached End of Sentence
             break
         # add current char to the review
         review_chars.append(pos2char(pos))
-                    
-        # update X_test
-        oh = np.zeros(CHAR_ONE_HOT_LEN)
-        oh[pos] = 1
-        X_test[0][0][-CHAR_ONE_HOT_LEN:] = oh
-        del oh
+
+        # zero out the character sublist
+        for i in range(ONE_HOT_CHAR_VECTOR_LEN):
+            X_test[0][0][CHAR_START_IDX + i] = 0
+        # set the bit for the new character
+        X_test[0][0][CHAR_START_IDX + pos] = 1
 
         count -= 1
 
