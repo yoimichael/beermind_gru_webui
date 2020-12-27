@@ -9,33 +9,30 @@ class baselineGRU(nn.Module):
         self.input_dim = 208
         self.hidden_dim = 100
         self.output_dim = 98
-        self.batch_size = 2
+        self.batch_size = 1
         self.num_layers = 2
         self.dropout = 0.2
         self.bidirect = False
         self.cuda = False
 
-        # input layer requried?
         self.gru = nn.GRU(self.input_dim, self.hidden_dim, self.num_layers,
                           bias=True, dropout=self.dropout,
                           bidirectional=self.bidirect, batch_first=True)
 
-        directions = 2 if self.bidirect else 1
-        self.out = nn.Linear(self.hidden_dim * directions, self.output_dim)
-        if (self.cuda):
-            self.gru, self.out = self.gru.cuda(), self.out.cuda()
+        self.out = nn.Linear(self.hidden_dim, self.output_dim)
 
         # load model cache
         self.load_state_dict(torch.load("./model_cache", map_location='cpu'))
 
-    def init_hidden(self, batch_size):
+        self.zero_grad()
+        self.init_hidden(self.batch_size)
+
+    def init_hidden(self, batch_size=1):
         # Before we've done anything, we dont have any hidden state.
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        directions = 2 if self.bidirect else 1
-        return torch.zeros(self.num_layers * directions, batch_size,
-                           self.hidden_dim)
+        self.hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim)
 
     def forward(self, sequence):
         '''
@@ -45,17 +42,5 @@ class baselineGRU(nn.Module):
         (batch_size x sequence_length x output_dim)
         '''
 
-        if (self.cuda):
-            if (type(sequence).__module__ == np.__name__):
-                sequence = torch.Tensor(sequence).cuda()
-            else:
-                sequence = sequence.cuda()
-            if isinstance(self.hidden, tuple):
-                self.hidden = (self.hidden[0].cuda(), self.hidden[1].cuda())
-            else:
-                self.hidden = self.hidden.cuda()
-
         output, self.hidden = self.gru(sequence, self.hidden)
-        del sequence
-        output = self.out(output)
-        return output
+        return self.out(output)

@@ -1,6 +1,8 @@
 import constants
-import numpy as np
+from numpy import zeros
+from numpy.random import choice
 import torch.nn.functional as F
+from beer_styles import encode_style
 from torch import device, from_numpy
 
 
@@ -35,32 +37,39 @@ def pos2char(pos: int) -> str:
     return ONE_HOT_POS_TO_SPECIAL_CHAR[pos]
 
 
-def generate_once(model, X_test, temporature: float = 0.2):
+def generate_once(model, style, rate, temporature: float = 0.2):
+    # prepare input data
+    X = from_numpy(zeros([1, 1, constants.ONE_HOT_VECTOR_LEN])
+                   ).float().to(device("cpu"))
+    # OH encode beer style
+    X[0][0][encode_style[style]] = 1
+    # OH encode rating
+    X[0][0][constants.ONE_HOT_BEER_STYLE_VECTOR_LEN + int(rate) % 5] = 1
+    # OH encode "Start of Sentence" char
+    last_char_pos = constants.CHAR_START_IDX + constants.SOS_VEC_POS
+    X[0][0][last_char_pos] = 1
+
     # keep track of the maximum length
     count = constants.MAX_GENERATE_LEN
     review_chars = []
     # let the model generate next characters
     while(count > 0):
         # get the next output from the model
-        output = model(from_numpy(X_test).float().to(device("cpu")))
-        # if use temperature when testing
-        output /= temporature
         # find probability of each character
-        output = F.softmax(output, dim=2)
-        probs = output[0][0]
+        probs = F.softmax(model(X)/temporature, dim=2)[0][0]
         # find the character
-        pos = np.random.choice(constants.ONE_HOT_CHAR_VECTOR_LEN, 1,
-                               p=probs.detach().cpu().numpy())[0]
+        pos = choice(constants.ONE_HOT_CHAR_VECTOR_LEN, 1,
+                     p=probs.detach().cpu().numpy())[0]
         if (pos == constants.EOS_VEC_POS):  # stop of reached End of Sentence
             break
         # add current char to the review
         review_chars.append(pos2char(pos))
 
         # zero out the character sublist
-        for i in range(constants.ONE_HOT_CHAR_VECTOR_LEN):
-            X_test[0][0][constants.CHAR_START_IDX + i] = 0
         # set the bit for the new character
-        X_test[0][0][constants.CHAR_START_IDX + pos] = 1
+        X[0][0][last_char_pos] = 0
+        last_char_pos = constants.CHAR_START_IDX + pos
+        X[0][0][last_char_pos] = 1
 
         count -= 1
 
