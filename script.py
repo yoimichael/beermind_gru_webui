@@ -50,25 +50,24 @@ def predict():
     # make it an async job
     job = q.enqueue(utils.generate_once, model, style, rate, temp)
     # initialize output generation progress in the Job instance
-    return index_page(job_id=job.get_id())
+    return index_page(job_id=job.get_id(), specs=specs)
 
 
 @app.route('/result/<job_id>')
 def get_job_result(job_id):
     job = q.fetch_job(job_id)
-    if job.result is None:
-        return index_page(job_id=job.get_id())
-
-    predict_result = job.result + '...'
     style, rate, temp = job.get_call_string().split(', ')[-3:]
     style = style.strip("'")
     rate = rate.strip("'")
     temp = temp.strip(')')
-    memcache_key = f'{style}{rate}{temp}'
-
     specs = (f"Style = {style}, "
              f"Rating = {rate}, "
              f"Temperature = {temp}: ")
+    if job.result is None:
+        return index_page(job_id=job.get_id(), specs=specs)
+
+    predict_result = job.result + '...'
+    memcache_key = f'{style}{rate}{temp}'
 
     # cache results in redis
     r.mset({memcache_key: predict_result})

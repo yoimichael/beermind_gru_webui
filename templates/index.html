@@ -37,7 +37,7 @@
     </form>
     <br>
     <div class="spinner-grow text-info" id="load" role="status" style="width: 4rem; height: 4rem; display: {{ 'block' if job_id else 'none' }}">
-        {% if job_id and not prediction %}
+        {% if job_id %}
         <span class="sr-only">Loading...</span>
         <script>
             setTimeout(() => {
@@ -46,7 +46,9 @@
         </script>
         {% endif %}
     </div>
-    {% for paragraph in prediction %}
+    {% if specs %}
+    <p>Generating review for {{ specs }}</p>
+    {% endif %} {% for paragraph in prediction %}
     <p class="text-justify">{{paragraph}}</p>
     {% endfor %}
 
