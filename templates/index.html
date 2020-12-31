@@ -36,8 +36,15 @@
         <input type="submit" value="Generate" class="btn btn-primary btn-lg" data-loading-text="loading..." onclick="visible()">
     </form>
     <br>
-    <div class="spinner-grow text-info" id="load" role="status" style="width: 4rem; height: 4rem; display: none">
+    <div class="spinner-grow text-info" id="load" role="status" style="width: 4rem; height: 4rem; display: {{ 'block' if job_id else 'none' }}">
+        {% if job_id and not prediction %}
         <span class="sr-only">Loading...</span>
+        <script>
+            setTimeout(() => {
+                window.location.href = "/result/{{ job_id }}";
+            }, 5000); // fetch result every 5 seconds
+        </script>
+        {% endif %}
     </div>
     {% for paragraph in prediction %}
     <p class="text-justify">{{paragraph}}</p>
@@ -48,8 +55,7 @@
 
     <script>
         function visible(obj) {
-            var el = document.getElementById("load");
-            el.style.display = 'block';
+            document.getElementById("load").style.display = 'block';
         }
     </script>
 </body>

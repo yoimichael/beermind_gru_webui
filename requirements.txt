@@ -2,5 +2,6 @@ Flask==1.0.2
 gunicorn==19.9.0
 numpy==1.16.2
 redis==3.2.1
+rq==1.7.0
 https://download.pytorch.org/whl/cpu/torch-1.1.0-cp36-cp36m-linux_x86_64.whl
 https://download.pytorch.org/whl/cpu/torchvision-0.3.0-cp36-cp36m-linux_x86_64.whl
