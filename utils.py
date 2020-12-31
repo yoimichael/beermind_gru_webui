@@ -37,7 +37,7 @@ def pos2char(pos: int) -> str:
     return ONE_HOT_POS_TO_SPECIAL_CHAR[pos]
 
 
-def generate_once(model, style, rate, temporature: float = 0.2):
+def generate_once(model, style, rate, temperature: float = 0.2):
     # prepare input data
     X = from_numpy(zeros([1, 1, constants.ONE_HOT_VECTOR_LEN])
                    ).float().to(device("cpu"))
@@ -56,7 +56,7 @@ def generate_once(model, style, rate, temporature: float = 0.2):
     while(count > 0):
         # get the next output from the model
         # find probability of each character
-        probs = F.softmax(model(X)/temporature, dim=2)[0][0]
+        probs = F.softmax(model(X)/temperature, dim=2)[0][0]
         # find the character
         pos = choice(constants.ONE_HOT_CHAR_VECTOR_LEN, 1,
                      p=probs.detach().cpu().numpy())[0]
