@@ -1,2 +1,1 @@
-worker: python worker.py
-web: gunicorn script:app --log-level debug
+web: python worker.py & gunicorn script:app --log-level debug
